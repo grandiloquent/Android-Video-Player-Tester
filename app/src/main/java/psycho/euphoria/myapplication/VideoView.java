@@ -1,11 +1,10 @@
 package psycho.euphoria.myapplication;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Matrix;
 import android.graphics.Matrix.ScaleToFit;
 import android.graphics.RectF;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnPreparedListener;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -33,6 +32,7 @@ public class VideoView extends FrameLayout {
     private RectF mVideoRect;
     private RectF mInitialRect;
 
+    @SuppressLint("ClickableViewAccessibility")
     public VideoView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mTextureVideoView = new TextureVideoView(getContext());
@@ -94,6 +94,8 @@ public class VideoView extends FrameLayout {
         mTextureVideoView.setOnTouchListener(this::onTouch);
         mTextureVideoView.setOnPreparedListener(mediaPlayer -> {
             mWidth = mediaPlayer.getVideoWidth();
+            int renderWidth = mTextureVideoView.getMeasuredWidth();
+            int renderHeight = mTextureVideoView.getMeasuredHeight();
             int videoWidth = mediaPlayer.getVideoWidth();
             int videoHeight = mediaPlayer.getVideoHeight();
             mVideoRect = new RectF(0, 0, videoWidth, videoHeight);
@@ -121,16 +123,14 @@ public class VideoView extends FrameLayout {
 
     private void snapBack() {
         RectF endRect = new RectF();
+        // https://developer.android.com/reference/android/graphics/Matrix#mapRect(android.graphics.RectF,%20android.graphics.RectF)
         m.mapRect(endRect, mVideoRect);
         if (endRect.width() < getMeasuredWidth() && endRect.height() < getMeasuredHeight()) {
-            Matrix endMatrix = new Matrix();
-            endMatrix.setRectToRect(mVideoRect, mInitialRect, ScaleToFit.CENTER);
-            m = endMatrix;
-            Log.e("B5aOx2", String.format("[]: endRect = %s;\nendMatrix = %s;\n", endRect, endMatrix));
-            Log.e("B5aOx2", String.format("[]: mVideoRect = %s;\nmInitialRect = %s;\n", mVideoRect, mInitialRect));
-            mTextureVideoView.setAnimationMatrix(endMatrix);
+            m = new Matrix();
+            mTextureVideoView.setAnimationMatrix(m);
             return;
         }
+        Log.e("B5aOx2", String.format("snapBack, %s", endRect));
     }
 
     private void zoomAt(float x, float y) {
