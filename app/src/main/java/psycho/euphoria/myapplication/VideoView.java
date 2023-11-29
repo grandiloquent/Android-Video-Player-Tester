@@ -55,12 +55,15 @@ public class VideoView extends FrameLayout {
                 mGestureState = SCROLL;
                 m.postTranslate(-distanceX, -distanceY);
                 mTextureVideoView.setAnimationMatrix(m);
+                RectF endRect = new RectF();
+                m.mapRect(endRect, mVideoRect);
+                //Log.e("B5aOx2", String.format("snapBack, %s %s", mScaleDetector.getFocusX(), endRect));
                 return true;
             }
 
             @Override
             public boolean onSingleTapUp(MotionEvent ev) {
-                Log.e("B5aOx2", String.format("onSingleTapUp, %s %s", ev.getX(), ev.getY()));
+                Log.e("B5aOx2", String.format("onSingleTapUp,%s", ev.getY()));
                 return true;
             }
         };
@@ -93,7 +96,6 @@ public class VideoView extends FrameLayout {
         mScaleDetector = new ScaleGestureDetector(getContext(), scaleListener);
         mTextureVideoView.setOnTouchListener(this::onTouch);
         mTextureVideoView.setOnPreparedListener(mediaPlayer -> {
-            mWidth = mediaPlayer.getVideoWidth();
             int renderWidth = mTextureVideoView.getMeasuredWidth();
             int renderHeight = mTextureVideoView.getMeasuredHeight();
             int videoWidth = mediaPlayer.getVideoWidth();
@@ -130,7 +132,21 @@ public class VideoView extends FrameLayout {
             mTextureVideoView.setAnimationMatrix(m);
             return;
         }
-        Log.e("B5aOx2", String.format("snapBack, %s", endRect));
+        float offsetX = 0;
+        float offsetY = 0;
+        if (endRect.left > 0)
+            offsetX = -endRect.left;
+        else {
+            float[] values = new float[9];
+            m.getValues(values);
+            offsetX = Math.abs(values[Matrix.MTRANS_X]) - (values[Matrix.MSCALE_X] - 1) * getMeasuredWidth();
+            if (offsetX < 1)
+                return;
+        }
+        m.postTranslate(offsetX, offsetY);
+        mTextureVideoView.setAnimationMatrix(m);
+        endRect = new RectF();
+        m.mapRect(endRect, mVideoRect);
     }
 
     private void zoomAt(float x, float y) {
